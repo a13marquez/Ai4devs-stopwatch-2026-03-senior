@@ -1,13 +1,187 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Timer and Countdown</title>
-<link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Stopwatch & Timer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --accent: #ef4444;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background 0.3s;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        h1 { margin-bottom: 2rem; font-weight: 300; }
+
+        /* Pantallas */
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.4s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Botones de Selección */
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn-mode {
+            padding: 2rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            background: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-mode:hover { border-color: var(--primary); background: #eff6ff; }
+        .btn-mode i { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; }
+
+        /* Display del tiempo */
+        .display {
+            font-size: 5rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            margin: 1.5rem 0;
+            font-family: monospace;
+        }
+
+        /* Inputs de Cuenta Atrás */
+        .inputs-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-box input {
+            width: 60px;
+            padding: 10px;
+            font-size: 1.2rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        /* Controles */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        button.main {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-start { background: var(--primary); color: white; }
+        .btn-stop { background: var(--accent); color: white; }
+        .btn-reset { background: #64748b; color: white; }
+        .btn-back { 
+            position: absolute; top: 20px; left: 20px; 
+            background: none; border: none; cursor: pointer; color: #94a3b8;
+        }
+
+        .fullscreen-btn {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; cursor: pointer; color: #94a3b8;
+        }
+
+        button:active { transform: scale(0.95); }
+    </style>
 </head>
 <body>
-<h1>Timer and Countdown</h1>
+
+    <div class="container" id="appContainer">
+        <button class="fullscreen-btn" onclick="toggleFullscreen()"><i class="fas fa-expand"></i></button>
+        
+        <div id="screen-home" class="screen active">
+            <h1>¿Qué necesitas?</h1>
+            <div class="mode-selector">
+                <button class="btn-mode" onclick="showScreen('stopwatch')">
+                    <i class="fas fa-stopwatch"></i>
+                    <div>Cronómetro</div>
+                </button>
+                <button class="btn-mode" onclick="showScreen('timer-setup')">
+                    <i class="fas fa-hourglass-half"></i>
+                    <div>Cuenta Atrás</div>
+                </button>
+            </div>
+        </div>
+
+        <div id="screen-stopwatch" class="screen">
+            <button class="btn-back" onclick="resetAll(); showScreen('home')"><i class="fas fa-arrow-left"></i> Volver</button>
+            <h1>Cronómetro</h1>
+            <div class="display" id="sw-display">00:00:00</div>
+            <div class="controls">
+                <button class="main btn-start" id="sw-start" onclick="startStopwatch()">Iniciar</button>
+                <button class="main btn-reset" onclick="resetStopwatch()">Reiniciar</button>
+            </div>
+        </div>
+
+        <div id="screen-timer-setup" class="screen">
+            <button class="btn-back" onclick="showScreen('home')"><i class="fas fa-arrow-left"></i> Volver</button>
+            <h1>Configurar Tiempo</h1>
+            <div class="inputs-group">
+                <div class="input-box"><label>HH</label><input type="number" id="t-h" min="0" value="0"></div>
+                <div class="input-box"><label>MM</label><input type="number" id="t-m" min="0" max="59" value="0"></div>
+                <div class="input-box"><label>SS</label><input type="number" id="t-s" min="0" max="59" value="0"></div>
+            </div>
+            <button class="main btn-start" onclick="initTimer()">Empezar</button>
+        </div>
+
+        <div id="screen-timer-run" class="screen">
+            <button class="btn-back" onclick="resetAll(); showScreen('timer-setup')"><i class="fas fa-arrow-left"></i> Ajustar</button>
+            <h1>Cuenta Atrás</h1>
+            <div class="display" id="timer-display">00:00:00</div>
+            <div class="controls">
+                <button class="main btn-start" id="timer-start" onclick="startTimer()">Iniciar</button>
+                <button class="main btn-reset" onclick="resetTimer()">Reiniciar</button>
+            </div>
+        </div>
+    </div>
 <script src="script.js"></script>
+  
 </body>
 </html>
